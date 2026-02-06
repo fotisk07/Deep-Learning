@@ -1,3 +1,8 @@
+import math
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -49,20 +54,7 @@ class CNNModel(nn.Module):
         return x
 
 
-# src/models/vision/vit_clip.py
-# Minimal ViT vision encoder suitable for CLIP-style dual-encoder training.
-
-from __future__ import annotations
-
-import math
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-
 class QuickGELU(nn.Module):
-    # CLIP uses a "QuickGELU"-like activation in some implementations.
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x * torch.sigmoid(1.702 * x)
 
