@@ -3,6 +3,8 @@ import torchvision
 from torch import nn
 from torch.utils.data import DataLoader, random_split
 
+from clip_reproduction.models.vision import CNNModel
+
 epochs = 1
 lr = 0.1
 batch_size = 10
@@ -13,7 +15,9 @@ val_ratio = 0.1  # 10% validation
 generator = torch.Generator().manual_seed(42)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dataset = torchvision.datasets.CIFAR100(
-    root="./data/raw", transform=torchvision.transforms.ToTensor(), download=True
+    root="./data/raw",
+    transform=torchvision.transforms.ToTensor(),
+    download=True,
 )
 
 n_total = len(dataset)
@@ -36,54 +40,6 @@ train_loader, val_loader = (
         shuffle=False,
     ),
 )
-
-
-class CNNModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.name = "CNN"
-        # -------- Feature extractor --------
-        self.features = nn.Sequential(
-            # Block 1: 32x32
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 16x16
-            # Block 2: 16x16
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 8x8
-            # Block 3: 8x8
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 4x4
-        )
-
-        # -------- Classifier --------
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(256 * 4 * 4, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.5),
-            nn.Linear(512, 100),
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
 
 
 @torch.no_grad()
