@@ -1,8 +1,8 @@
 import torch
-import torchvision
 from torch import nn
 from torch.utils.data import DataLoader, random_split
 
+from clip_reproduction.datasets import get_dataset
 from clip_reproduction.models.vision import CNNModel
 
 epochs = 1
@@ -10,35 +10,38 @@ lr = 0.1
 batch_size = 10
 evaluate_every = 1
 val_ratio = 0.1  # 10% validation
+num_workers = 4
 
 
 generator = torch.Generator().manual_seed(42)
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dataset = torchvision.datasets.CIFAR100(
-    root="./data/raw",
-    transform=torchvision.transforms.ToTensor(),
-    download=True,
-)
+
+dataset = get_dataset("cifar100", train=True)
 
 n_total = len(dataset)
 n_val = int(val_ratio * n_total)
 n_train = n_total - n_val
 nb_batches = len(dataset) // batch_size
 
-
-dataloader = DataLoader(dataset, batch_size=batch_size)
 train_dataset, val_dataset = random_split(
     dataset,
     [n_train, n_val],
     generator=generator,
 )
-train_loader, val_loader = (
-    DataLoader(train_dataset, batch_size=batch_size, shuffle=True),
-    DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-    ),
+
+train_loader = DataLoader(
+    train_dataset,
+    batch_size=batch_size,
+    shuffle=True,
+    generator=generator,
+    num_workers=num_workers,
+)
+
+val_loader = DataLoader(
+    val_dataset,
+    batch_size=batch_size,
+    shuffle=False,
+    num_workers=num_workers,
 )
 
 
