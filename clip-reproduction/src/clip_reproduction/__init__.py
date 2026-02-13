@@ -1,2 +1,3 @@
-def hello() -> str:
-    return "Hello from clip-reproduction!"
+from clip_reproduction.models.factory import create_model
+
+__all__ = ["create_model"]
