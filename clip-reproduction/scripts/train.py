@@ -12,11 +12,7 @@ from clip_reproduction.datasets import get_classification_datasets, get_clip_dat
 from clip_reproduction.models.factory import create_model, is_clip_model
 from clip_reproduction.models.text import ByteTokenizer
 
-
-def seed_everything(seed: int) -> None:
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+from clip_reproduction import utils
 
 
 def _accuracy(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
@@ -151,7 +147,7 @@ def evaluate_clip(
 
 @hydra.main(version_base=None, config_path="../conf", config_name="train_conf")
 def main(cfg) -> None:
-    seed_everything(cfg.seed)
+    utils.seed_everything(cfg.seed)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device", device)
