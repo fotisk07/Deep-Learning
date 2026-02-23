@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Tuple
 
 import hydra
 import numpy as np
@@ -27,7 +26,7 @@ def compute_features(
     model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     all_features = []
     all_labels = []
 
@@ -53,7 +52,7 @@ def load_or_compute_features(
     cache_dir: Path,
     dataset_name: str,
     split: str,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     path = cache_path(cache_dir=cache_dir, dataset_name=dataset_name, split=split)
     if path.exists():
         data = np.load(path)
@@ -128,7 +127,6 @@ def main(cfg) -> None:
     # sklearn uses C = 1/lambda for L2 strength.
     clf = LogisticRegression(
         solver="lbfgs",
-        multi_class="multinomial",
         penalty="l2",
         C=cfg.logreg_c,
         max_iter=1000,

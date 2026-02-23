@@ -32,10 +32,10 @@ def main(cfg) -> None:
         pin_memory=device.type == "cuda",
     )
 
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch16").to(device)
     model.eval()
 
-    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch16")
 
     texts = [f"A photo of a {x}" for x in class_names]
 

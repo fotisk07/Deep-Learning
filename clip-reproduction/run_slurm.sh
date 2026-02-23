@@ -31,7 +31,7 @@ case "$PARTITION" in
 esac
 
 JOB_NAME=$(basename "${CMD[0]}")
-LOG_DIR="logs"
+LOG_DIR="logs_dgx"
 mkdir -p "$LOG_DIR"
 
 sbatch <<EOF
