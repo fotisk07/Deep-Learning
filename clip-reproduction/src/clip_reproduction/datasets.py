@@ -8,11 +8,18 @@ from torchvision import transforms
 from clip_reproduction.models.text import ByteTokenizer
 
 DATASETS = {
+    "cifar10": torchvision.datasets.CIFAR10,
     "cifar100": torchvision.datasets.CIFAR100,
     "mnist": torchvision.datasets.MNIST,
 }
 
 PROMPT_TEMPLATES = {
+    "cifar10": [
+        "a photo of a {label}",
+        "a blurry photo of a {label}",
+        "a close-up photo of a {label}",
+        "a low resolution photo of a {label}",
+    ],
     "cifar100": [
         "a photo of a {label}",
         "a blurry photo of a {label}",
@@ -26,6 +33,8 @@ PROMPT_TEMPLATES = {
     ],
 }
 
+CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
+CIFAR10_STD = (0.2470, 0.2435, 0.2616)
 CIFAR_MEAN = (0.5071, 0.4867, 0.4408)
 CIFAR_STD = (0.2675, 0.2565, 0.2761)
 MNIST_MEAN = (0.1307, 0.1307, 0.1307)
@@ -57,6 +66,18 @@ class ImageTextPairDataset(Dataset):
 
 
 def _build_transform(name: str, image_size: int, is_train: bool):
+    if name == "cifar10":
+        transforms_list = [transforms.Resize((image_size, image_size))]
+        if is_train:
+            transforms_list.append(transforms.RandomHorizontalFlip())
+        transforms_list.extend(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=CIFAR10_MEAN, std=CIFAR10_STD),
+            ],
+        )
+        return transforms.Compose(transforms_list)
+
     if name == "cifar100":
         transforms_list = [transforms.Resize((image_size, image_size))]
         if is_train:
@@ -121,6 +142,33 @@ def get_classification_datasets(
     val_subset = Subset(eval_base, val_indices)
 
     return train_subset, val_subset, num_classes, class_names
+
+
+def get_classification_train_test_datasets(
+    name: str,
+    root: str,
+    image_size: int,
+    download: bool = True,
+    train_transform=None,
+    eval_transform=None,
+) -> tuple[Dataset, Dataset, int, list[str]]:
+    if name not in DATASETS:
+        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
+
+    dataset_class = DATASETS[name]
+    train_tf = train_transform if train_transform is not None else _build_transform(name=name, image_size=image_size, is_train=True)
+    eval_tf = eval_transform if eval_transform is not None else _build_transform(name=name, image_size=image_size, is_train=False)
+
+    train_ds = dataset_class(root=root, train=True, transform=train_tf, download=download)
+    test_ds = dataset_class(root=root, train=False, transform=eval_tf, download=download)
+
+    if name == "mnist":
+        class_names = [str(i) for i in range(10)]
+    else:
+        class_names = list(train_ds.classes)
+    num_classes = len(class_names)
+
+    return train_ds, test_ds, num_classes, class_names
 
 
 def get_clip_datasets(
