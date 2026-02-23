@@ -1,4 +1,5 @@
 import random
+from tqdm.auto import tqdm
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -44,7 +45,7 @@ def train_one_epoch_classifier(
     total_acc = 0.0
     step = 0
 
-    for step, (images, labels) in enumerate(loader, start=1):
+    for step, (images, labels) in tqdm(enumerate(loader, start=1), total=len(loader)):
         images = images.to(device)
         labels = labels.to(device)
 
@@ -102,7 +103,7 @@ def train_one_epoch_clip(
     total_loss = 0.0
     step = 0
 
-    for step, (images, token_ids) in enumerate(loader, start=1):
+    for step, (images, token_ids) in tqdm(enumerate(loader, start=1), total=len(loader)):
         images = images.to(device)
         token_ids = token_ids.to(device)
 
