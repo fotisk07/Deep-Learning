@@ -47,7 +47,7 @@ class CNNModel(nn.Module):
         return self.classifier(self.features(x))
 
 
-class ResNet50Classifier(nn.Module):
+class ResNet50LinearProb(nn.Module):
     def __init__(self, num_classes: int = 100) -> None:
         super().__init__()
         model = torchvision.models.resnet50(
