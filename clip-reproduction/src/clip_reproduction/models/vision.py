@@ -47,11 +47,17 @@ class CNNModel(nn.Module):
         return self.classifier(self.features(x))
 
 
-class ResNet18Classifier(nn.Module):
+class ResNet50Classifier(nn.Module):
     def __init__(self, num_classes: int = 100) -> None:
         super().__init__()
-        model = torchvision.models.resnet18(weights=None)
+        model = torchvision.models.resnet50(
+            weights=torchvision.models.ResNet50_Weights.DEFAULT
+        )
+
+        for param in model.parameters():
+            param.requires_grad = False
         model.fc = nn.Linear(model.fc.in_features, num_classes)
+
         self.model = model
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
