@@ -1,0 +1,2 @@
+- model=openai_clip
+- dataset=cifar100

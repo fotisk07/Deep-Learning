@@ -1,8 +1,9 @@
 import torch
 from torch import nn
+from transformers import CLIPModel as HFCLIPModel
 
 from clip_reproduction.models.text import TextTransformerCLIP
-from clip_reproduction.models.vision import VisionTransformerCLIP, ResNet50Embedding
+from clip_reproduction.models.vision import ResNet50Embedding, VisionTransformerCLIP
 
 
 class CLIPModel(nn.Module):
@@ -44,6 +45,20 @@ class CLIPModel(nn.Module):
         }
 
 
+class OpenAIClipModel(nn.Module):
+    def __init__(self, model_name: str = "openai/clip-vit-base-patch16") -> None:
+        super().__init__()
+
+        self.model_name = model_name
+        self.model = HFCLIPModel.from_pretrained(model_name)
+
+    def encode_image(self, images: torch.Tensor) -> torch.Tensor:
+        return self.model.get_image_features(pixel_values=images)
+
+    def encode_text(self, token_ids: torch.Tensor, attention_mask=None) -> torch.Tensor:
+        return self.model.get_text_features(input_ids=token_ids, attention_mask=attention_mask)
+
+
 def build_clip_model(
     image_size: int = 224,
     context_length: int = 77,
@@ -56,10 +71,10 @@ def build_clip_model(
     text_layers: int = 8,
     text_heads: int = 8,
     dropout: float = 0.0,
-    encoder:str = 'vit'
+    encoder: str = "vit",
 ) -> CLIPModel:
-    
-    if encoder == 'vit':
+
+    if encoder == "vit":
         image_encoder = VisionTransformerCLIP(
             image_size=image_size,
             patch_size=vision_patch_size,
@@ -69,9 +84,9 @@ def build_clip_model(
             embed_dim=embed_dim,
             dropout=dropout,
         )
-    elif encoder == 'resnet50':
+    elif encoder == "resnet50":
         image_encoder = ResNet50Embedding(embed_dim=embed_dim)
-        
+
     text_encoder = TextTransformerCLIP(
         context_length=context_length,
         width=text_width,
@@ -81,3 +96,7 @@ def build_clip_model(
         dropout=dropout,
     )
     return CLIPModel(image_encoder=image_encoder, text_encoder=text_encoder)
+
+
+def build_openai_clip_model(model_name: str = "openai/clip-vit-base-patch16") -> OpenAIClipModel:
+    return OpenAIClipModel(model_name=model_name)

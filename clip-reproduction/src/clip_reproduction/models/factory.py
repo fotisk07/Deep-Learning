@@ -1,6 +1,6 @@
 from torch import nn
 
-from clip_reproduction.models.clip import CLIPModel, build_clip_model
+from clip_reproduction.models.clip import CLIPModel, build_clip_model, build_openai_clip_model
 from clip_reproduction.models.vision import CNNModel, ResNet50LinearProb
 
 
@@ -10,8 +10,12 @@ def create_model(name: str, **kwargs) -> nn.Module:
     if key == "clip":
         return build_clip_model(**kwargs)
 
+    if key == "openai_clip":
+        return build_openai_clip_model(
+            model_name=kwargs.get("openai_model_name", "openai/clip-vit-base-patch16")
+        )
+
     num_classes = kwargs.get("num_classes", 100)
-    pretrained = kwargs.get("pretrained", True)
 
     if key == "cnn":
         return CNNModel(num_classes=num_classes)
@@ -19,7 +23,7 @@ def create_model(name: str, **kwargs) -> nn.Module:
     if key == "resnet50":
         return ResNet50LinearProb(num_classes=num_classes)
 
-    available = ["clip", "cnn", "resnet50"]
+    available = ["clip", "openai_clip", "cnn", "resnet50"]
     raise ValueError(f"Unknown model '{name}'. Available models: {available}")
 
 

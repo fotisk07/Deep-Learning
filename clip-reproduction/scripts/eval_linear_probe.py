@@ -6,19 +6,39 @@ import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
+from torchvision import transforms
 from tqdm.auto import tqdm
+from transformers import CLIPImageProcessor
 
 from clip_reproduction import utils
 from clip_reproduction.datasets import get_classification_train_test_datasets
 from clip_reproduction.models.factory import create_model
-
-MODEL_NAME = "resnet50"
 
 
 def l2_normalize(features: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     norms = np.linalg.norm(features, axis=1, keepdims=True)
     norms = np.maximum(norms, eps)
     return features / norms
+
+
+def _get_image_features(model: torch.nn.Module, images: torch.Tensor) -> torch.Tensor:
+    if hasattr(model, "encode_image_penultimate"):
+        return model.encode_image_penultimate(images)
+    return model.encode_image(images)
+
+
+def _build_openai_clip_transform(model_name: str):
+    processor = CLIPImageProcessor.from_pretrained(model_name)
+    return transforms.Compose(
+        [
+            transforms.Lambda(
+                lambda img: processor(
+                    images=img.convert("RGB"),
+                    return_tensors="pt",
+                )["pixel_values"].squeeze(0)
+            ),
+        ]
+    )
 
 
 @torch.no_grad()
@@ -32,7 +52,7 @@ def compute_features(
 
     for images, labels in tqdm(loader, desc="Extracting features"):
         images = images.to(device, non_blocking=True)
-        features = model.encode_image_penultimate(images)
+        features = _get_image_features(model=model, images=images)
         all_features.append(features.cpu().numpy().astype(np.float32))
         all_labels.append(labels.numpy())
 
@@ -41,8 +61,8 @@ def compute_features(
     return features_np, labels_np
 
 
-def cache_path(cache_dir: Path, dataset_name: str, split: str) -> Path:
-    return cache_dir / f"{dataset_name}_{MODEL_NAME}_{split}_features.npz"
+def cache_path(cache_dir: Path, feature_id: str, split: str) -> Path:
+    return cache_dir / f"{feature_id}_{split}_features.npz"
 
 
 def load_or_compute_features(
@@ -50,10 +70,10 @@ def load_or_compute_features(
     loader: DataLoader,
     device: torch.device,
     cache_dir: Path,
-    dataset_name: str,
+    feature_id: str,
     split: str,
 ) -> tuple[np.ndarray, np.ndarray]:
-    path = cache_path(cache_dir=cache_dir, dataset_name=dataset_name, split=split)
+    path = cache_path(cache_dir=cache_dir, feature_id=feature_id, split=split)
     if path.exists():
         data = np.load(path)
         return data["features"], data["labels"]
@@ -70,21 +90,36 @@ def main(cfg) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() and cfg.use_cuda else "cpu")
     print(f"Using device: {device}")
 
+    if cfg.model not in {"resnet50", "openai_clip"}:
+        raise ValueError("`model` must be one of ['resnet50', 'openai_clip'] for linear probing.")
+
     cache_dir = Path(cfg.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
+    openai_model_tag = cfg.openai_model_name.replace("/", "-")
+    image_tag = cfg.image_size if cfg.model != "openai_clip" else "hfproc"
+    feature_id = f"{cfg.dataset}_{cfg.model}_{openai_model_tag}_{image_tag}"
+
+    train_tf = None
+    eval_tf = None
+    if cfg.model == "openai_clip":
+        clip_tf = _build_openai_clip_transform(cfg.openai_model_name)
+        train_tf = clip_tf
+        eval_tf = clip_tf
 
     train_ds, test_ds, num_classes, _ = get_classification_train_test_datasets(
         name=cfg.dataset,
         root=cfg.data_root,
         image_size=cfg.image_size,
         download=True,
+        train_transform=train_tf,
+        eval_transform=eval_tf,
     )
 
-    model = create_model(
-        name=MODEL_NAME,
-        num_classes=num_classes,
-        pretrained=cfg.pretrained,
-    )
+    model_kwargs = {"num_classes": num_classes}
+    if cfg.model == "openai_clip":
+        model_kwargs = {"openai_model_name": cfg.openai_model_name}
+
+    model = create_model(name=cfg.model, **model_kwargs)
     model = model.to(device)
     model.eval()
     model.requires_grad_(False)
@@ -109,7 +144,7 @@ def main(cfg) -> None:
         loader=train_loader,
         device=device,
         cache_dir=cache_dir,
-        dataset_name=cfg.dataset,
+        feature_id=feature_id,
         split="train",
     )
     x_test, y_test = load_or_compute_features(
@@ -117,7 +152,7 @@ def main(cfg) -> None:
         loader=test_loader,
         device=device,
         cache_dir=cache_dir,
-        dataset_name=cfg.dataset,
+        feature_id=feature_id,
         split="test",
     )
 
