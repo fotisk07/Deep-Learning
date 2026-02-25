@@ -1,8 +1,12 @@
+import pickle
 import random
+from typing import Any
 
+import pandas as pd
 import torch
 import torchvision
 from torch.utils.data import Dataset, Subset
+from torch_geometric.data import Batch
 from torchvision import transforms
 
 from clip_reproduction.models.text import ByteTokenizer
@@ -156,8 +160,16 @@ def get_classification_train_test_datasets(
         raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
 
     dataset_class = DATASETS[name]
-    train_tf = train_transform if train_transform is not None else _build_transform(name=name, image_size=image_size, is_train=True)
-    eval_tf = eval_transform if eval_transform is not None else _build_transform(name=name, image_size=image_size, is_train=False)
+    train_tf = (
+        train_transform
+        if train_transform is not None
+        else _build_transform(name=name, image_size=image_size, is_train=True)
+    )
+    eval_tf = (
+        eval_transform
+        if eval_transform is not None
+        else _build_transform(name=name, image_size=image_size, is_train=False)
+    )
 
     train_ds = dataset_class(root=root, train=True, transform=train_tf, download=download)
     test_ds = dataset_class(root=root, train=False, transform=eval_tf, download=download)
@@ -203,3 +215,118 @@ def get_clip_datasets(
     )
 
     return train_dataset, val_dataset, num_classes, class_names
+
+
+# =========================================================
+# Molecule graph + text embedding datasets
+# =========================================================
+x_map: dict[str, list[Any]] = {
+    "atomic_num": list(range(0, 119)),
+    "chirality": [
+        "CHI_UNSPECIFIED",
+        "CHI_TETRAHEDRAL_CW",
+        "CHI_TETRAHEDRAL_CCW",
+        "CHI_OTHER",
+        "CHI_TETRAHEDRAL",
+        "CHI_ALLENE",
+        "CHI_SQUAREPLANAR",
+        "CHI_TRIGONALBIPYRAMIDAL",
+        "CHI_OCTAHEDRAL",
+    ],
+    "degree": list(range(0, 11)),
+    "formal_charge": list(range(-5, 7)),
+    "num_hs": list(range(0, 9)),
+    "num_radical_electrons": list(range(0, 5)),
+    "hybridization": [
+        "UNSPECIFIED",
+        "S",
+        "SP",
+        "SP2",
+        "SP3",
+        "SP3D",
+        "SP3D2",
+        "OTHER",
+    ],
+    "is_aromatic": [False, True],
+    "is_in_ring": [False, True],
+}
+
+e_map: dict[str, list[Any]] = {
+    "bond_type": [
+        "UNSPECIFIED",
+        "SINGLE",
+        "DOUBLE",
+        "TRIPLE",
+        "QUADRUPLE",
+        "QUINTUPLE",
+        "HEXTUPLE",
+        "ONEANDAHALF",
+        "TWOANDAHALF",
+        "THREEANDAHALF",
+        "FOURANDAHALF",
+        "FIVEANDAHALF",
+        "AROMATIC",
+        "IONIC",
+        "HYDROGEN",
+        "THREECENTER",
+        "DATIVEONE",
+        "DATIVE",
+        "DATIVEL",
+        "DATIVER",
+        "OTHER",
+        "ZERO",
+    ],
+    "stereo": [
+        "STEREONONE",
+        "STEREOANY",
+        "STEREOZ",
+        "STEREOE",
+        "STEREOCIS",
+        "STEREOTRANS",
+    ],
+    "is_conjugated": [False, True],
+}
+
+
+def load_id2emb(csv_path: str) -> dict[str, torch.Tensor]:
+    df = pd.read_csv(csv_path)
+    id2emb: dict[str, torch.Tensor] = {}
+    for _, row in df.iterrows():
+        id_ = str(row["ID"])
+        emb_vals = [float(x) for x in str(row["embedding"]).split(",")]
+        id2emb[id_] = torch.tensor(emb_vals, dtype=torch.float32)
+    return id2emb
+
+
+def load_descriptions_from_graphs(graph_path: str) -> dict[str, str]:
+    with open(graph_path, "rb") as f:
+        graphs = pickle.load(f)
+    return {graph.id: graph.description for graph in graphs}
+
+
+class PreprocessedGraphDataset(Dataset):
+    def __init__(self, graph_path: str, emb_dict=None):
+        with open(graph_path, "rb") as f:
+            self.graphs = pickle.load(f)
+        self.emb_dict = emb_dict
+
+    def __len__(self):
+        return len(self.graphs)
+
+    def __getitem__(self, idx):
+        graph = self.graphs[idx]
+        if self.emb_dict is not None:
+            return graph, self.emb_dict[graph.id]
+        return graph
+
+
+def collate_graph_text_batch(batch):
+    if isinstance(batch[0], tuple):
+        graphs, text_embs = zip(*batch)
+        batch_graph = Batch.from_data_list(list(graphs))
+        return batch_graph, torch.stack(text_embs, dim=0)
+    return Batch.from_data_list(batch)
+
+
+# Backward-compatible alias for previous code paths.
+collate_fn = collate_graph_text_batch
