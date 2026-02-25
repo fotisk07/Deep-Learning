@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import hydra
@@ -13,6 +14,8 @@ from transformers import CLIPImageProcessor
 from clip_reproduction import utils
 from clip_reproduction.datasets import get_classification_train_test_datasets
 from clip_reproduction.models.factory import create_model
+
+log = logging.getLogger(__name__)
 
 
 def l2_normalize(features: np.ndarray, eps: float = 1e-12) -> np.ndarray:
@@ -35,9 +38,9 @@ def _build_openai_clip_transform(model_name: str):
                 lambda img: processor(
                     images=img.convert("RGB"),
                     return_tensors="pt",
-                )["pixel_values"].squeeze(0)
+                )["pixel_values"].squeeze(0),
             ),
-        ]
+        ],
     )
 
 
@@ -172,7 +175,7 @@ def main(cfg) -> None:
 
     y_pred = clf.predict(x_test)
     test_acc = accuracy_score(y_test, y_pred)
-    print(f"Test accuracy: {test_acc:.4f}")
+    log.info(f"Test accuracy: {test_acc:.4f}")
 
 
 if __name__ == "__main__":

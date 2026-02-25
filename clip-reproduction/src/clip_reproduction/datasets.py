@@ -11,14 +11,6 @@ from torchvision import transforms
 
 from clip_reproduction.models.text import ByteTokenizer
 
-DATASETS = {
-    "cifar10": torchvision.datasets.CIFAR10,
-    "cifar100": torchvision.datasets.CIFAR100,
-    "mnist": torchvision.datasets.MNIST,
-    "fashionmnist": torchvision.datasets.FashionMNIST,
-    "kmnist": torchvision.datasets.KMNIST,
-}
-
 PROMPT_TEMPLATES = {
     "cifar10": [
         "a photo of a {label}",
@@ -49,6 +41,18 @@ PROMPT_TEMPLATES = {
         "a handwritten digit {label}",
         "an image of the number {label}",
     ],
+    "eurosat": [
+        "a satellite photo of {label}",
+    ],
+    "stanfordcars": [
+        "a photo of a {label}",
+    ],
+    "oxfordiiitpet": [
+        "a photo of a {label}",
+    ],
+    "food101": [
+        "a photo of {label}",
+    ],
 }
 
 CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
@@ -57,6 +61,104 @@ CIFAR_MEAN = (0.5071, 0.4867, 0.4408)
 CIFAR_STD = (0.2675, 0.2565, 0.2761)
 MNIST_MEAN = (0.1307, 0.1307, 0.1307)
 MNIST_STD = (0.3081, 0.3081, 0.3081)
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
+DATASET_SPECS = {
+    "cifar10": {
+        "class": torchvision.datasets.CIFAR10,
+        "split_key": "train",
+        "train_split": True,
+        "test_split": False,
+        "mean": CIFAR10_MEAN,
+        "std": CIFAR10_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+    "cifar100": {
+        "class": torchvision.datasets.CIFAR100,
+        "split_key": "train",
+        "train_split": True,
+        "test_split": False,
+        "mean": CIFAR_MEAN,
+        "std": CIFAR_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+    "mnist": {
+        "class": torchvision.datasets.MNIST,
+        "split_key": "train",
+        "train_split": True,
+        "test_split": False,
+        "mean": MNIST_MEAN,
+        "std": MNIST_STD,
+        "hflip": False,
+        "to_rgb": True,
+    },
+    "fashionmnist": {
+        "class": torchvision.datasets.FashionMNIST,
+        "split_key": "train",
+        "train_split": True,
+        "test_split": False,
+        "mean": MNIST_MEAN,
+        "std": MNIST_STD,
+        "hflip": False,
+        "to_rgb": True,
+    },
+    "kmnist": {
+        "class": torchvision.datasets.KMNIST,
+        "split_key": "train",
+        "train_split": True,
+        "test_split": False,
+        "mean": MNIST_MEAN,
+        "std": MNIST_STD,
+        "hflip": False,
+        "to_rgb": True,
+    },
+    "eurosat": {
+        "class": torchvision.datasets.EuroSAT,
+        "split_key": "split",
+        "train_split": "train",
+        "test_split": "test",
+        "mean": IMAGENET_MEAN,
+        "std": IMAGENET_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+    "stanfordcars": {
+        "class": torchvision.datasets.StanfordCars,
+        "split_key": "split",
+        "train_split": "train",
+        "test_split": "test",
+        "mean": IMAGENET_MEAN,
+        "std": IMAGENET_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+    "oxfordiiitpet": {
+        "class": torchvision.datasets.OxfordIIITPet,
+        "split_key": "split",
+        "train_split": "trainval",
+        "test_split": "test",
+        "mean": IMAGENET_MEAN,
+        "std": IMAGENET_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+    "food101": {
+        "class": torchvision.datasets.Food101,
+        "split_key": "split",
+        "train_split": "train",
+        "test_split": "test",
+        "mean": IMAGENET_MEAN,
+        "std": IMAGENET_STD,
+        "hflip": True,
+        "to_rgb": False,
+    },
+}
+
+# Backward-compatible alias.
+DATASETS = {name: spec["class"] for name, spec in DATASET_SPECS.items()}
 
 
 class ImageTextPairDataset(Dataset):
@@ -84,40 +186,67 @@ class ImageTextPairDataset(Dataset):
 
 
 def _build_transform(name: str, image_size: int, is_train: bool):
-    if name == "cifar10":
-        transforms_list = [transforms.Resize((image_size, image_size))]
-        if is_train:
-            transforms_list.append(transforms.RandomHorizontalFlip())
-        transforms_list.extend(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(mean=CIFAR10_MEAN, std=CIFAR10_STD),
-            ],
-        )
-        return transforms.Compose(transforms_list)
+    if name not in DATASET_SPECS:
+        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASET_SPECS.keys())}")
 
-    if name == "cifar100":
-        transforms_list = [transforms.Resize((image_size, image_size))]
-        if is_train:
-            transforms_list.append(transforms.RandomHorizontalFlip())
-        transforms_list.extend(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(mean=CIFAR_MEAN, std=CIFAR_STD),
-            ],
-        )
-        return transforms.Compose(transforms_list)
-
-    if name == "mnist":
-        transforms_list = [
-            transforms.Resize((image_size, image_size)),
-            transforms.Grayscale(num_output_channels=3),
+    spec = DATASET_SPECS[name]
+    transforms_list = [transforms.Resize((image_size, image_size))]
+    if spec["to_rgb"]:
+        transforms_list.append(transforms.Grayscale(num_output_channels=3))
+    if is_train and spec["hflip"]:
+        transforms_list.append(transforms.RandomHorizontalFlip())
+    transforms_list.extend(
+        [
             transforms.ToTensor(),
-            transforms.Normalize(mean=MNIST_MEAN, std=MNIST_STD),
-        ]
-        return transforms.Compose(transforms_list)
+            transforms.Normalize(mean=spec["mean"], std=spec["std"]),
+        ],
+    )
+    return transforms.Compose(transforms_list)
 
-    raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
+
+def _make_dataset(
+    name: str,
+    root: str,
+    *,
+    is_train: bool,
+    transform,
+    download: bool,
+) -> Dataset:
+    if name not in DATASET_SPECS:
+        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASET_SPECS.keys())}")
+
+    spec = DATASET_SPECS[name]
+    dataset_class = spec["class"]
+    split_key = spec["split_key"]
+    split_value = spec["train_split"] if is_train else spec["test_split"]
+
+    if split_key == "train":
+        kwargs = {"train": bool(split_value)}
+        return dataset_class(root=root, transform=transform, download=download, **kwargs)
+
+    kwargs = {split_key: split_value}
+    try:
+        return dataset_class(root=root, transform=transform, download=download, **kwargs)
+    except TypeError as exc:
+        # Older torchvision versions expose some datasets without a split argument.
+        if split_key not in str(exc):
+            raise
+        full_ds = dataset_class(root=root, transform=transform, download=download)
+        train_indices, test_indices = _split_indices(len(full_ds), val_ratio=0.2, seed=42)
+        indices = train_indices if is_train else test_indices
+        return Subset(full_ds, indices)
+
+
+def _class_names(dataset: Dataset, name: str) -> list[str]:
+    base = dataset
+    while isinstance(base, Subset):
+        base = base.dataset
+
+    if hasattr(base, "classes"):
+        return [str(x) for x in base.classes]
+    if name in {"mnist", "fashionmnist", "kmnist"}:
+        return [str(i) for i in range(10)]
+    raise ValueError(f"Dataset '{name}' does not expose class names.")
 
 
 def _split_indices(total_size: int, val_ratio: float, seed: int) -> tuple[list[int], list[int]]:
@@ -139,20 +268,15 @@ def get_classification_datasets(
     seed: int,
     download: bool = True,
 ) -> tuple[Subset, Subset, int, list[str]]:
-    if name not in DATASETS:
-        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
-
-    dataset_class = DATASETS[name]
+    if name not in DATASET_SPECS:
+        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASET_SPECS.keys())}")
     train_tf = _build_transform(name=name, image_size=image_size, is_train=True)
     eval_tf = _build_transform(name=name, image_size=image_size, is_train=False)
 
-    train_base = dataset_class(root=root, train=True, transform=train_tf, download=download)
-    eval_base = dataset_class(root=root, train=True, transform=eval_tf, download=download)
+    train_base = _make_dataset(name=name, root=root, is_train=True, transform=train_tf, download=download)
+    eval_base = _make_dataset(name=name, root=root, is_train=True, transform=eval_tf, download=download)
 
-    if name == "mnist":
-        class_names = [str(i) for i in range(10)]
-    else:
-        class_names = list(train_base.classes)
+    class_names = _class_names(train_base, name=name)
     num_classes = len(class_names)
 
     train_indices, val_indices = _split_indices(len(train_base), val_ratio=val_ratio, seed=seed)
@@ -170,10 +294,9 @@ def get_classification_train_test_datasets(
     train_transform=None,
     eval_transform=None,
 ) -> tuple[Dataset, Dataset, int, list[str]]:
-    if name not in DATASETS:
-        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
+    if name not in DATASET_SPECS:
+        raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASET_SPECS.keys())}")
 
-    dataset_class = DATASETS[name]
     train_tf = (
         train_transform
         if train_transform is not None
@@ -185,13 +308,10 @@ def get_classification_train_test_datasets(
         else _build_transform(name=name, image_size=image_size, is_train=False)
     )
 
-    train_ds = dataset_class(root=root, train=True, transform=train_tf, download=download)
-    test_ds = dataset_class(root=root, train=False, transform=eval_tf, download=download)
+    train_ds = _make_dataset(name=name, root=root, is_train=True, transform=train_tf, download=download)
+    test_ds = _make_dataset(name=name, root=root, is_train=False, transform=eval_tf, download=download)
 
-    if name == "mnist":
-        class_names = [str(i) for i in range(10)]
-    else:
-        class_names = list(train_ds.classes)
+    class_names = _class_names(train_ds, name=name)
     num_classes = len(class_names)
 
     return train_ds, test_ds, num_classes, class_names
