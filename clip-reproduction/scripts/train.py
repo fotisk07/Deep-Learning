@@ -180,6 +180,7 @@ def main(cfg) -> None:
             text_layers=cfg.text_layers,
             text_heads=cfg.text_heads,
             dropout=cfg.dropout,
+            encoder=cfg.encoder
         )
     else:
         train_ds, val_ds, num_classes, _ = get_classification_datasets(
