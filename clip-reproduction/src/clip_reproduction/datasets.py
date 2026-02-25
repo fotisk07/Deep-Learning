@@ -11,6 +11,8 @@ DATASETS = {
     "cifar10": torchvision.datasets.CIFAR10,
     "cifar100": torchvision.datasets.CIFAR100,
     "mnist": torchvision.datasets.MNIST,
+    "fashionmnist": torchvision.datasets.FashionMNIST,
+    "kmnist": torchvision.datasets.KMNIST,
 }
 
 PROMPT_TEMPLATES = {
@@ -21,6 +23,18 @@ PROMPT_TEMPLATES = {
         "a low resolution photo of a {label}",
     ],
     "cifar100": [
+        "a photo of a {label}",
+        "a blurry photo of a {label}",
+        "a close-up photo of a {label}",
+        "a low resolution photo of a {label}",
+    ],
+    "fashionmnist": [
+        "a photo of a {label}",
+        "a blurry photo of a {label}",
+        "a close-up photo of a {label}",
+        "a low resolution photo of a {label}",
+    ],
+    "kmnist": [
         "a photo of a {label}",
         "a blurry photo of a {label}",
         "a close-up photo of a {label}",

@@ -162,3 +162,24 @@ class VisionTransformerCLIP(nn.Module):
             x = F.normalize(x, dim=-1)
 
         return x
+
+
+class ResNet50Embedding(nn.Module):
+    def __init__(self, embed_dim: int):
+        super().__init__()
+
+        backbone = torchvision.models.resnet50(
+            weights=torchvision.models.ResNet50_Weights.DEFAULT
+        )
+
+        in_features = backbone.fc.in_features
+        backbone.fc = nn.Identity()
+
+        self.backbone = backbone
+
+        self.projection = nn.Linear(in_features, embed_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        features = self.backbone(x)
+        embeddings = self.projection(features)
+        return embeddings

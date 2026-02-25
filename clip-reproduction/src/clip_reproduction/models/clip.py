@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from clip_reproduction.models.text import TextTransformerCLIP
-from clip_reproduction.models.vision import VisionTransformerCLIP
+from clip_reproduction.models.vision import VisionTransformerCLIP, ResNet50Embedding
 
 
 class CLIPModel(nn.Module):
@@ -56,16 +56,22 @@ def build_clip_model(
     text_layers: int = 8,
     text_heads: int = 8,
     dropout: float = 0.0,
+    encoder:str = 'vit'
 ) -> CLIPModel:
-    image_encoder = VisionTransformerCLIP(
-        image_size=image_size,
-        patch_size=vision_patch_size,
-        width=vision_width,
-        layers=vision_layers,
-        heads=vision_heads,
-        embed_dim=embed_dim,
-        dropout=dropout,
-    )
+    
+    if encoder == 'vit':
+        image_encoder = VisionTransformerCLIP(
+            image_size=image_size,
+            patch_size=vision_patch_size,
+            width=vision_width,
+            layers=vision_layers,
+            heads=vision_heads,
+            embed_dim=embed_dim,
+            dropout=dropout,
+        )
+    elif encoder == 'resnet50':
+        image_encoder = ResNet50Embedding(embed_dim=embed_dim)
+        
     text_encoder = TextTransformerCLIP(
         context_length=context_length,
         width=text_width,

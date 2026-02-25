@@ -17,6 +17,7 @@ log_every: 100
 eval_every: 1
 
 # CLIP-specific params (used when model=clip)
+encoder: vit
 context_length: 77
 embed_dim: 512
 vision_width: 64
