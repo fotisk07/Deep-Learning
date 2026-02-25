@@ -89,3 +89,6 @@ def main():
 
     generate_embeddings(train_ds, "train", cfg)
     generate_embeddings(val_ds, "validation", cfg)
+
+
+main()

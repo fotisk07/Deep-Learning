@@ -18,7 +18,7 @@ class ClipConfig:
     val_graphs: str = "data/molecule/raw/validation_graphs.pkl"
     train_text_emb: str = "data/molecule/processed/st_text_embeddings/train_sentencetransformer_embeddings.pt"
     val_text_emb: str = (
-        "data/processed/molecule/st_text_embeddings/validation_sentencetransformer_embeddings.pt"
+        "data/molecule/processed/st_text_embeddings/validation_sentencetransformer_embeddings.pt"
     )
 
     # runtime
@@ -44,7 +44,7 @@ class ClipConfig:
     graph_dropout: float = 0.1
     global_feat_dim: int = 10
 
-    out_dir: Path = Path("outputs/clip")
+    out_dir: Path = Path("outputs/molecule/")
 
 
 class ProjectionHead(nn.Module):
@@ -163,7 +163,7 @@ def main():
 
             opt.zero_grad(set_to_none=True)
 
-            with torch.amp.autocast(enabled=(cfg.use_amp and cfg.device == "cuda")):
+            with torch.amp.autocast(device_type=cfg.device):
                 g = graph_encoder(graphs)  # (B, D) normalized
                 t = text_proj(text_emb)  # (B, D) normalized
                 loss = clip_loss(g, t, cfg.temperature)
