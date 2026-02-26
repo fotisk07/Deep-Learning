@@ -51,4 +51,5 @@ echo "GPU spec: ${GPU_SPEC}"
 echo "Command: ${CMD[@]}"
 
 srun ${CMD[@]}
+
 EOF

@@ -37,7 +37,10 @@ def main(cfg) -> None:
 
     tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch16")
 
-    texts = [f"A photo of a {x}" for x in class_names]
+    texts = [f"A photo of the digit {x}" if str(x).isdigit() 
+             else f"A photo of a {x}" for x in class_names]
+    
+    print(texts)
 
     text_inputs = tokenizer(texts, padding=True, return_tensors="pt").to(device)
 

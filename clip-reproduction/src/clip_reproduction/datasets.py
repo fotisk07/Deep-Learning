@@ -112,6 +112,15 @@ def _build_transform(name: str, image_size: int, is_train: bool):
             transforms.Normalize(mean=MNIST_MEAN, std=MNIST_STD),
         ]
         return transforms.Compose(transforms_list)
+    
+    if name == "fashionmnist":
+        transforms_list = [
+            transforms.Resize((image_size, image_size)),
+            transforms.Grayscale(num_output_channels=3),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=MNIST_MEAN, std=MNIST_STD),
+        ]
+        return transforms.Compose(transforms_list)
 
     raise ValueError(f"Unknown dataset '{name}'. Available datasets: {list(DATASETS.keys())}")
 
