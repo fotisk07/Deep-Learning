@@ -112,11 +112,12 @@ hydra:
     hydra:
     - hydra.mode=RUN
     task:
+    - dataset=cifar10
     - model=openai_clip
   job:
     name: eval_linear_probe
     chdir: null
-    override_dirname: model=openai_clip
+    override_dirname: dataset=cifar10,model=openai_clip
     id: ???
     num: ???
     config_name: eval_linear_probe_conf

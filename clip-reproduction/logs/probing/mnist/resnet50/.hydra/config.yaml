@@ -1,7 +1,8 @@
 seed: 42
-dataset: cifar10
-image_size: 224
-pretrained: true
+model: resnet50
+dataset: mnist
+image_size: 128
+openai_model_name: openai/clip-vit-base-patch16
 data_root: ./data
 cache_dir: ./data/feature_cache
 batch_size: 256

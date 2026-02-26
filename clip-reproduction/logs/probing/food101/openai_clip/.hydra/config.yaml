@@ -1,7 +1,7 @@
 seed: 42
 model: openai_clip
 dataset: food101
-image_size: 64
+image_size: 128
 openai_model_name: openai/clip-vit-base-patch16
 data_root: ./data
 cache_dir: ./data/feature_cache

@@ -1,7 +1,0 @@
-Running on partition: prod10
-GPU spec: gpu:nvidia_a100_1g.10gb:1
-Command: uv run scripts/train.py
-Using device cuda
-Starting training: model=clip dataset=cifar100
-
-Epoch 1/20

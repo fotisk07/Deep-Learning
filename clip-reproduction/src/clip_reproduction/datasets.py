@@ -44,9 +44,6 @@ PROMPT_TEMPLATES = {
     "eurosat": [
         "a satellite photo of {label}",
     ],
-    "stanfordcars": [
-        "a photo of a {label}",
-    ],
     "oxfordiiitpet": [
         "a photo of a {label}",
     ],
@@ -117,16 +114,6 @@ DATASET_SPECS = {
     },
     "eurosat": {
         "class": torchvision.datasets.EuroSAT,
-        "split_key": "split",
-        "train_split": "train",
-        "test_split": "test",
-        "mean": IMAGENET_MEAN,
-        "std": IMAGENET_STD,
-        "hflip": True,
-        "to_rgb": False,
-    },
-    "stanfordcars": {
-        "class": torchvision.datasets.StanfordCars,
         "split_key": "split",
         "train_split": "train",
         "test_split": "test",

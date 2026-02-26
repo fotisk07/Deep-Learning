@@ -1,5 +1,4 @@
 import random
-from tqdm.auto import tqdm
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -7,12 +6,12 @@ import hydra
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 
+from clip_reproduction import utils
 from clip_reproduction.datasets import get_classification_datasets, get_clip_datasets
 from clip_reproduction.models.factory import create_model, is_clip_model
 from clip_reproduction.models.text import ByteTokenizer
-
-from clip_reproduction import utils
 
 
 def _accuracy(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
@@ -180,9 +179,14 @@ def main(cfg) -> None:
             text_layers=cfg.text_layers,
             text_heads=cfg.text_heads,
             dropout=cfg.dropout,
-            encoder=cfg.encoder
+            encoder=cfg.encoder,
         )
     else:
+        if cfg.model == "resnet50":
+            raise ValueError(
+                "`resnet50` is the frozen feature-extractor variant (for linear probing). "
+                "Use `resnet50_finetuning` for training a trainable last layer."
+            )
         train_ds, val_ds, num_classes, _ = get_classification_datasets(
             name=cfg.dataset,
             root=cfg.data_root,

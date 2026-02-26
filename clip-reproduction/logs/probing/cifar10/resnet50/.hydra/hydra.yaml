@@ -112,12 +112,12 @@ hydra:
     hydra:
     - hydra.mode=RUN
     task:
-    - dataset=cifar100
-    - model=openai_clip
+    - dataset=cifar10
+    - model=resnet50
   job:
     name: eval_linear_probe
     chdir: null
-    override_dirname: dataset=cifar100,model=openai_clip
+    override_dirname: dataset=cifar10,model=resnet50
     id: ???
     num: ???
     config_name: eval_linear_probe_conf
@@ -142,7 +142,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /raid/home/students/fotis/MVA/Deep-Learning/clip-reproduction/logs/probing/cifar100/openai_clip
+    output_dir: /raid/home/students/fotis/MVA/Deep-Learning/clip-reproduction/logs/probing/cifar10/resnet50
     choices:
       hydra/env: default
       hydra/callbacks: null

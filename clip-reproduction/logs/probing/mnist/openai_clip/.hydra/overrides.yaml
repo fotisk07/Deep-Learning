@@ -1,2 +1,2 @@
-- model=openai_clip
 - dataset=mnist
+- model=openai_clip

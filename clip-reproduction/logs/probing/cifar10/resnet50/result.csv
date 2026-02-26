@@ -1,0 +1,2 @@
+dataset,model,test_accuracy,device
+cifar10,resnet50,0.9153,

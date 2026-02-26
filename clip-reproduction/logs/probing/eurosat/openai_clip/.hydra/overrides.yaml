@@ -1,2 +1,2 @@
-- model=openai_clip
 - dataset=eurosat
+- model=openai_clip

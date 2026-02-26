@@ -1,4 +1,5 @@
 model: clip
+# model options: clip, cnn, resnet50_finetuning
 # dataset options: cifar100, mnist
 dataset: cifar100
 data_root: ./data

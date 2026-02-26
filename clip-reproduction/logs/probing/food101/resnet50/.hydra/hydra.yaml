@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: ./logs/probing/${dataset}
+    dir: ./logs/probing/${dataset}/${model}
   sweep:
     dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}
@@ -112,11 +112,12 @@ hydra:
     hydra:
     - hydra.mode=RUN
     task:
-    - dataset=cifar100
+    - dataset=food101
+    - model=resnet50
   job:
     name: eval_linear_probe
     chdir: null
-    override_dirname: dataset=cifar100
+    override_dirname: dataset=food101,model=resnet50
     id: ???
     num: ???
     config_name: eval_linear_probe_conf
@@ -141,7 +142,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /raid/home/students/fotis/MVA/Deep-Learning/clip-reproduction/logs/probing/cifar100
+    output_dir: /raid/home/students/fotis/MVA/Deep-Learning/clip-reproduction/logs/probing/food101/resnet50
     choices:
       hydra/env: default
       hydra/callbacks: null

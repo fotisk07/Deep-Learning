@@ -12,6 +12,7 @@ dependencies = [
     "open-clip-torch>=2.31.0",
     "pandas>=2.3.3",
     "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
     "sentence-transformers>=5.1.2",
     "torch>=2.8.0",
     "torch-geometric>=2.6.1",
@@ -23,3 +24,8 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.31.0",
+]

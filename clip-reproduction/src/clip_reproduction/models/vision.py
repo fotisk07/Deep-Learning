@@ -47,43 +47,29 @@ class CNNModel(nn.Module):
         return self.classifier(self.features(x))
 
 
-class ResNet50LinearProb(nn.Module):
-    def __init__(self, num_classes: int = 100) -> None:
-        super().__init__()
-        model = torchvision.models.resnet50(
-            weights=torchvision.models.ResNet50_Weights.DEFAULT
-        )
-
-        for param in model.parameters():
-            param.requires_grad = False
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
-
-        self.model = model
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
-
-
-class ResNet50Classifier(nn.Module):
-    def __init__(self, num_classes: int = 100, pretrained: bool = True) -> None:
+class ResNet50Features(nn.Module):
+    def __init__(self, pretrained: bool = True) -> None:
         super().__init__()
         weights = torchvision.models.ResNet50_Weights.DEFAULT if pretrained else None
         model = torchvision.models.resnet50(weights=weights)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        model.fc = nn.Identity()
         self.model = model
 
     def encode_image_penultimate(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.model.conv1(x)
-        x = self.model.bn1(x)
-        x = self.model.relu(x)
-        x = self.model.maxpool(x)
-        x = self.model.layer1(x)
-        x = self.model.layer2(x)
-        x = self.model.layer3(x)
-        x = self.model.layer4(x)
-        x = self.model.avgpool(x)
-        x = torch.flatten(x, 1)
-        return x
+        return self.model(x)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.encode_image_penultimate(x)
+
+
+class ResNet50Finetuning(nn.Module):
+    def __init__(self, num_classes: int = 100) -> None:
+        super().__init__()
+        model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
+        for param in model.parameters():
+            param.requires_grad = False
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        self.model = model
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
@@ -168,9 +154,7 @@ class ResNet50Embedding(nn.Module):
     def __init__(self, embed_dim: int):
         super().__init__()
 
-        backbone = torchvision.models.resnet50(
-            weights=torchvision.models.ResNet50_Weights.DEFAULT
-        )
+        backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
 
         in_features = backbone.fc.in_features
         backbone.fc = nn.Identity()

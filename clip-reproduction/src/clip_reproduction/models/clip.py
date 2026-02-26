@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchvision import transforms
 from transformers import CLIPModel as HFCLIPModel
 
 from clip_reproduction.models.text import TextTransformerCLIP
@@ -50,6 +51,7 @@ class OpenAIClipModel(nn.Module):
         super().__init__()
 
         self.model_name = model_name
+        self.image_size = 224
         self.model = HFCLIPModel.from_pretrained(model_name)
 
     def encode_image(self, images: torch.Tensor) -> torch.Tensor:
@@ -57,6 +59,19 @@ class OpenAIClipModel(nn.Module):
 
     def encode_text(self, token_ids: torch.Tensor, attention_mask=None) -> torch.Tensor:
         return self.model.get_text_features(input_ids=token_ids, attention_mask=attention_mask)
+
+    def image_transform(self) -> transforms.Compose:
+        return transforms.Compose(
+            [
+                transforms.Resize((self.image_size, self.image_size)),
+                transforms.Lambda(lambda img: img.convert("RGB")),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=(0.48145466, 0.4578275, 0.40821073),
+                    std=(0.26862954, 0.26130258, 0.27577711),
+                ),
+            ]
+        )
 
 
 def build_clip_model(

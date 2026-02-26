@@ -1,9 +1,10 @@
-import logging
+import csv
 from pathlib import Path
 
 import hydra
 import numpy as np
 import torch
+from hydra.core.hydra_config import HydraConfig
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
@@ -14,8 +15,6 @@ from transformers import CLIPImageProcessor
 from clip_reproduction import utils
 from clip_reproduction.datasets import get_classification_train_test_datasets
 from clip_reproduction.models.factory import create_model
-
-log = logging.getLogger(__name__)
 
 
 def l2_normalize(features: np.ndarray, eps: float = 1e-12) -> np.ndarray:
@@ -162,7 +161,6 @@ def main(cfg) -> None:
     x_train = l2_normalize(x_train)
     x_test = l2_normalize(x_test)
 
-    # sklearn uses C = 1/lambda for L2 strength.
     clf = LogisticRegression(
         solver="lbfgs",
         penalty="l2",
@@ -175,7 +173,22 @@ def main(cfg) -> None:
 
     y_pred = clf.predict(x_test)
     test_acc = accuracy_score(y_test, y_pred)
-    log.info(f"Test accuracy: {test_acc:.4f}")
+
+    output_dir = Path(HydraConfig.get().runtime.output_dir)
+    result_path = output_dir / "result.csv"
+    with result_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["dataset", "model", "test_accuracy", "device"])
+        writer.writeheader()
+        writer.writerow(
+            {
+                "dataset": cfg.dataset,
+                "model": cfg.model,
+                "test_accuracy": f"{test_acc:.4f}",
+            },
+        )
+
+    print(f"Test accuracy: {test_acc:.4f}")
+    print(f"Saved result to {result_path}")
 
 
 if __name__ == "__main__":

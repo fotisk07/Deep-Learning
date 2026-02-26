@@ -112,8 +112,8 @@ hydra:
     hydra:
     - hydra.mode=RUN
     task:
-    - model=openai_clip
     - dataset=eurosat
+    - model=openai_clip
   job:
     name: eval_linear_probe
     chdir: null
