@@ -35,8 +35,10 @@ uv run scripts/eval_linear_probe.py
 Zero-shot OpenAI CLIP baseline:
 
 ```bash
-uv run scripts/eval_openai_clip.py dataset=cifar100
+uv run scripts/eval_openai_clip.py dataset=cifar100 image_size=224
 ```
+
+The only supported image_size for OpenAI CLIP is `224`
 
 ## Main Files
 

@@ -1,2 +1,0 @@
-dataset,model,test_accuracy,device
-mnist,openai_clip,0.9677,

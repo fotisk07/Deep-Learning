@@ -1,2 +1,0 @@
-dataset,model,test_accuracy,device
-cifar100,openai_clip,0.7838,
